@@ -1,0 +1,103 @@
+'use client'
+
+import { FormEvent, useEffect, useState } from 'react'
+import { Droplets, LockKeyhole } from 'lucide-react'
+import { AdminDashboard } from './admin-dashboard'
+
+const ADMIN_USERNAME = 'admin'
+const ADMIN_PASSWORD = 'admin123'
+const SESSION_KEY = 'bogelwash-admin-session'
+
+export function AdminGate() {
+  const [authenticated, setAuthenticated] = useState(false)
+  const [ready, setReady] = useState(false)
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    setAuthenticated(sessionStorage.getItem(SESSION_KEY) === 'true')
+    setReady(true)
+  }, [])
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      sessionStorage.setItem(SESSION_KEY, 'true')
+      setAuthenticated(true)
+      setError('')
+      return
+    }
+
+    setError('Username atau password tidak sesuai.')
+  }
+
+  function handleLogout() {
+    sessionStorage.removeItem(SESSION_KEY)
+    setAuthenticated(false)
+    setUsername('')
+    setPassword('')
+  }
+
+  if (!ready) return null
+  if (authenticated) return <AdminDashboard onLogout={handleLogout} />
+
+  return (
+    <main className="flex min-h-dvh items-center justify-center px-4 py-10">
+      <section className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl sm:p-8">
+        <div className="flex flex-col items-center text-center">
+          <span className="flex size-12 items-center justify-center rounded-xl bg-primary/15 text-primary glow-cyan">
+            <Droplets className="size-6" />
+          </span>
+          <h1 className="mt-4 text-2xl font-bold">Login Admin</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Masuk untuk mengelola antrean dan transaksi BogelWash.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+          <div>
+            <label htmlFor="admin-username" className="mb-1.5 block text-sm font-medium">
+              Username
+            </label>
+            <input
+              id="admin-username"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              autoComplete="username"
+              required
+              className="mobile-readable-control w-full rounded-xl border border-input bg-secondary/40 px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+          <div>
+            <label htmlFor="admin-password" className="mb-1.5 block text-sm font-medium">
+              Password
+            </label>
+            <input
+              id="admin-password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="current-password"
+              required
+              className="mobile-readable-control w-full rounded-xl border border-input bg-secondary/40 px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
+          <button
+            type="submit"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+          >
+            <LockKeyhole className="size-4" />
+            Masuk ke Dashboard
+          </button>
+        </form>
+      </section>
+    </main>
+  )
+}
