@@ -15,7 +15,7 @@ import { useTransactions } from '@/lib/store'
 const inputCls =
   'mobile-readable-control w-full rounded-xl border border-input bg-secondary/40 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30'
 const labelCls = 'mb-1.5 block text-sm font-medium'
-const QRIS_IMAGE_URL = '/qris.JPEG'
+const QRIS_IMAGE_URL = '/barcode.PNG'
 
 export function AddTransactionDialog({
   open,
