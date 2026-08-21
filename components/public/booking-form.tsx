@@ -1,7 +1,13 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { CalendarClock, CheckCircle2, Loader2, Wallet } from 'lucide-react'
+import {
+  CalendarClock,
+  CheckCircle2,
+  Loader2,
+  MessageCircle,
+  Wallet,
+} from 'lucide-react'
 import {
   MOBIL_PACKAGES,
   MOTOR_PACKAGES,
@@ -15,6 +21,7 @@ import { useTransactions } from '@/lib/store'
 const inputCls =
   'mobile-readable-control w-full rounded-xl border border-input bg-secondary/40 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30'
 const labelCls = 'mb-1.5 block text-sm font-medium text-foreground'
+const QRIS_IMAGE_URL = '/qris.JPEG'
 
 export function BookingForm() {
   const { addTransaction } = useTransactions()
@@ -23,12 +30,16 @@ export function BookingForm() {
   const [payment, setPayment] = useState<PaymentMethod>('Tunai')
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const packages = vehicle === 'Motor' ? MOTOR_PACKAGES : MOBIL_PACKAGES
   const selected = useMemo(
     () => packages.find((p) => p.id === packageId),
     [packages, packageId],
   )
+  const whatsappLink = `https://wa.me/6281263308881?text=${encodeURIComponent(
+    `Halo Admin BogelWash, saya sudah booking dengan nomor antrean ${success ?? ''}.`,
+  )}`
 
   function onVehicleChange(v: VehicleType) {
     setVehicle(v)
@@ -40,20 +51,26 @@ export function BookingForm() {
     const form = e.currentTarget
     const data = new FormData(form)
     setSubmitting(true)
+    setError(null)
 
     // Simulate a short network delay for prototype feedback
-    setTimeout(() => {
-      const tx = addTransaction({
+    setTimeout(async () => {
+      try {
+        const tx = await addTransaction({
         customer: String(data.get('customer') || ''),
         phone: String(data.get('phone') || ''),
         vehicle,
         plate: String(data.get('plate') || ''),
         packageId,
         payment,
-      })
-      setSubmitting(false)
-      setSuccess(tx.id)
-      form.reset()
+        })
+        setSuccess(tx.id)
+        form.reset()
+      } catch {
+        setError('Booking gagal disimpan. Silakan coba lagi.')
+      } finally {
+        setSubmitting(false)
+      }
     }, 700)
   }
 
@@ -76,6 +93,15 @@ export function BookingForm() {
         >
           Buat Booking Lagi
         </button>
+        <a
+          href={whatsappLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-primary underline underline-offset-2"
+        >
+          <MessageCircle className="size-4" />
+          Hubungi Admin via WhatsApp
+        </a>
       </div>
     )
   }
@@ -86,6 +112,11 @@ export function BookingForm() {
       className="rounded-2xl border border-border bg-card p-6 sm:p-8"
     >
       <div className="grid gap-5 sm:grid-cols-2">
+        {error && (
+          <p role="alert" className="sm:col-span-2 text-sm text-destructive">
+            {error}
+          </p>
+        )}
         <div>
           <label htmlFor="customer" className={labelCls}>
             Nama Lengkap
@@ -188,6 +219,27 @@ export function BookingForm() {
               </button>
             ))}
           </div>
+          {payment === 'QRIS' && (
+            <div className="mt-4 flex flex-col items-center rounded-xl border border-primary/30 bg-primary/5 p-4 text-center">
+              <p className="text-sm font-medium">Scan QRIS untuk pembayaran</p>
+              <img
+                src={QRIS_IMAGE_URL}
+                alt="QRIS merchant untuk pembayaran"
+                className="mt-3 size-48 rounded-lg bg-white object-contain p-2"
+                onError={(event) => {
+                  event.currentTarget.alt = 'QRIS tidak dapat dimuat'
+                }}
+              />
+              <a
+                href={QRIS_IMAGE_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 text-xs text-primary underline underline-offset-2"
+              >
+                Buka QRIS merchant
+              </a>
+            </div>
+          )}
         </div>
 
         <div>

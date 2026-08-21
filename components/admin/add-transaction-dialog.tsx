@@ -15,6 +15,7 @@ import { useTransactions } from '@/lib/store'
 const inputCls =
   'mobile-readable-control w-full rounded-xl border border-input bg-secondary/40 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30'
 const labelCls = 'mb-1.5 block text-sm font-medium'
+const QRIS_IMAGE_URL = '/qris.JPEG'
 
 export function AddTransactionDialog({
   open,
@@ -37,10 +38,10 @@ export function AddTransactionDialog({
     setPackageId(v === 'Motor' ? 'motor-kecil' : 'mobil-standar')
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const data = new FormData(e.currentTarget)
-    addTransaction({
+    await addTransaction({
       customer: String(data.get('customer') || 'Walk-in'),
       phone: '',
       vehicle,
@@ -163,6 +164,27 @@ export function AddTransactionDialog({
                 </option>
               ))}
             </select>
+            {payment === 'QRIS' && (
+              <div className="mt-3 flex flex-col items-center rounded-xl border border-primary/30 bg-primary/5 p-3 text-center">
+                <p className="text-xs font-medium">Scan QRIS untuk pembayaran</p>
+                <img
+                  src={QRIS_IMAGE_URL}
+                  alt="QRIS merchant untuk pembayaran"
+                  className="mt-2 size-40 rounded-lg bg-white object-contain p-2"
+                  onError={(event) => {
+                    event.currentTarget.alt = 'QRIS tidak dapat dimuat'
+                  }}
+                />
+                <a
+                  href={QRIS_IMAGE_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 text-xs text-primary underline underline-offset-2"
+                >
+                  Buka QRIS merchant
+                </a>
+              </div>
+            )}
           </div>
 
           <div className="mt-2 flex gap-3">

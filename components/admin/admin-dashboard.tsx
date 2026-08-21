@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { ArrowLeft, Droplets, LogOut, Plus } from 'lucide-react'
+import { ArrowLeft, Droplets, LogOut, Plus, RotateCcw } from 'lucide-react'
 import { useTransactions } from '@/lib/store'
 import { StatCards } from '@/components/admin/stat-cards'
 import { TransactionTable } from '@/components/admin/transaction-table'
@@ -17,6 +17,7 @@ function withinRange(createdAt: string, range: Range) {
   const created = new Date(createdAt)
   const diffDays =
     (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)
+  if (diffDays < 0) return false
   if (range === 'Harian') {
     return created.toDateString() === now.toDateString()
   }
@@ -25,7 +26,7 @@ function withinRange(createdAt: string, range: Range) {
 }
 
 export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
-  const { transactions } = useTransactions()
+  const { transactions, resetTransactions } = useTransactions()
   const [range, setRange] = useState<Range>('Harian')
   const [dialogOpen, setDialogOpen] = useState(false)
 
@@ -33,6 +34,12 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     () => transactions.filter((t) => withinRange(t.createdAt, range)),
     [transactions, range],
   )
+
+  function handleReset() {
+    if (window.confirm('Reset semua transaksi dan pendapatan dashboard?')) {
+      resetTransactions()
+    }
+  }
 
   return (
     <main className="min-h-dvh">
@@ -80,7 +87,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="inline-flex rounded-xl border border-border bg-card p-1">
               {RANGES.map((r) => (
                 <button
@@ -104,6 +111,14 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             >
               <Plus className="size-4" />
               <span className="hidden sm:inline">Tambah Transaksi</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="inline-flex items-center gap-2 rounded-xl border border-destructive/40 px-4 py-2.5 text-sm font-semibold text-destructive transition hover:bg-destructive/10"
+            >
+              <RotateCcw className="size-4" />
+              <span className="hidden sm:inline">Reset Dashboard</span>
             </button>
           </div>
         </div>

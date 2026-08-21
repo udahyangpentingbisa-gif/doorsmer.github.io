@@ -4,10 +4,6 @@ import { FormEvent, useEffect, useState } from 'react'
 import { Droplets, LockKeyhole } from 'lucide-react'
 import { AdminDashboard } from './admin-dashboard'
 
-const ADMIN_USERNAME = 'admin'
-const ADMIN_PASSWORD = 'admin123'
-const SESSION_KEY = 'bogelwash-admin-session'
-
 export function AdminGate() {
   const [authenticated, setAuthenticated] = useState(false)
   const [ready, setReady] = useState(false)
@@ -16,25 +12,34 @@ export function AdminGate() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    setAuthenticated(sessionStorage.getItem(SESSION_KEY) === 'true')
-    setReady(true)
+    fetch('/api/admin/session')
+      .then((response) => response.json())
+      .then((body: { authenticated: boolean }) => setAuthenticated(body.authenticated))
+      .finally(() => setReady(true))
   }, [])
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-      sessionStorage.setItem(SESSION_KEY, 'true')
+    const response = await fetch('/api/admin/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    })
+
+    if (response.ok) {
       setAuthenticated(true)
       setError('')
+      window.location.reload()
       return
     }
 
     setError('Username atau password tidak sesuai.')
   }
 
-  function handleLogout() {
-    sessionStorage.removeItem(SESSION_KEY)
+  async function handleLogout() {
+    await fetch('/api/admin/session', { method: 'DELETE' })
+    window.location.reload()
     setAuthenticated(false)
     setUsername('')
     setPassword('')

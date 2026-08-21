@@ -6,8 +6,8 @@ const HOURS = [
   { day: 'Hari Libur Nasional', time: '08.00 – 18.00' },
 ]
 
-const ADMIN_WA_NUMBER = '6283157362154'
-const ADMIN_WA_DISPLAY = '0831 5736 2154'
+const ADMIN_WA_NUMBER = '6281263308881'
+const ADMIN_WA_DISPLAY = '0812 6330 8881'
 const WA_LINK = `https://wa.me/${ADMIN_WA_NUMBER}?text=${encodeURIComponent(
   'Halo Admin BogelWash, saya ingin bertanya tentang layanan cuci kendaraan.',
 )}`

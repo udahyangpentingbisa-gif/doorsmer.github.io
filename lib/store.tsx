@@ -4,11 +4,11 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from 'react'
 import {
-  SEED_TRANSACTIONS,
   getPackageById,
   type PaymentMethod,
   type Transaction,
@@ -27,50 +27,93 @@ type NewBooking = {
 
 type TransactionsContextValue = {
   transactions: Transaction[]
-  addTransaction: (data: NewBooking) => Transaction
-  updateStatus: (id: string, status: TxStatus) => void
+  loading: boolean
+  addTransaction: (data: NewBooking) => Promise<Transaction>
+  updateStatus: (id: string, status: TxStatus) => Promise<void>
+  resetTransactions: () => Promise<void>
 }
 
 const TransactionsContext = createContext<TransactionsContextValue | null>(null)
 
-let counter = 1043
+async function requestTransactions() {
+  const response = await fetch('/api/transactions', { cache: 'no-store' })
+  if (!response.ok) throw new Error('Gagal memuat transaksi')
+  const body = (await response.json()) as { transactions: Transaction[] }
+  return body.transactions
+}
 
 export function TransactionsProvider({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const [transactions, setTransactions] =
-    useState<Transaction[]>(SEED_TRANSACTIONS)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const addTransaction = useCallback((data: NewBooking) => {
-    const pkg = getPackageById(data.packageId)
-    const tx: Transaction = {
-      id: `TRX-${counter++}`,
-      customer: data.customer,
-      phone: data.phone,
-      vehicle: data.vehicle,
-      plate: data.plate.toUpperCase(),
-      packageId: data.packageId,
-      packageName: pkg?.name ?? 'Custom',
-      price: pkg?.price ?? 0,
-      status: 'Diproses',
-      payment: data.payment,
-      createdAt: new Date().toISOString(),
+  useEffect(() => {
+    let active = true
+    requestTransactions()
+      .then((next) => {
+        if (active) setTransactions(next)
+      })
+      .catch(() => {
+        if (active) setTransactions([])
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    const interval = window.setInterval(() => {
+      requestTransactions()
+        .then((next) => {
+          if (active) setTransactions(next)
+        })
+        .catch(() => undefined)
+    }, 30_000)
+
+    return () => {
+      active = false
+      window.clearInterval(interval)
     }
-    setTransactions((prev) => [tx, ...prev])
-    return tx
   }, [])
 
-  const updateStatus = useCallback((id: string, status: TxStatus) => {
+  const addTransaction = useCallback(async (data: NewBooking) => {
+    const pkg = getPackageById(data.packageId)
+    if (!pkg) throw new Error('Paket layanan tidak ditemukan')
+    const response = await fetch('/api/transactions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!response.ok) throw new Error('Booking gagal disimpan')
+    const body = (await response.json()) as { transaction: Transaction }
+    setTransactions((prev) => [body.transaction, ...prev])
+    return body.transaction
+  }, [])
+
+  const updateStatus = useCallback(async (id: string, status: TxStatus) => {
+    const response = await fetch(`/api/transactions/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    })
+    if (!response.ok) throw new Error('Status transaksi gagal diperbarui')
     setTransactions((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, status } : t)),
+      prev.map((transaction) =>
+        transaction.id === id ? { ...transaction, status } : transaction,
+      ),
     )
   }, [])
 
+  const resetTransactions = useCallback(async () => {
+    const response = await fetch('/api/transactions/reset', { method: 'POST' })
+    if (!response.ok) throw new Error('Transaksi gagal direset')
+    setTransactions([])
+  }, [])
+
   const value = useMemo(
-    () => ({ transactions, addTransaction, updateStatus }),
-    [transactions, addTransaction, updateStatus],
+    () => ({ transactions, loading, addTransaction, updateStatus, resetTransactions }),
+    [transactions, loading, addTransaction, updateStatus, resetTransactions],
   )
 
   return (
