@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { ArrowLeft, Droplets, LogOut, Plus, RotateCcw } from 'lucide-react'
+import { ArrowLeft, Droplets, KeyRound, LogOut, Plus, RotateCcw } from 'lucide-react'
 import { useTransactions } from '@/lib/store'
 import { StatCards } from '@/components/admin/stat-cards'
 import { TransactionTable } from '@/components/admin/transaction-table'
 import { AddTransactionDialog } from '@/components/admin/add-transaction-dialog'
+import { ChangePasswordDialog } from '@/components/admin/change-password-dialog'
 
 type Range = 'Harian' | 'Mingguan' | 'Bulanan'
 
@@ -29,6 +30,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const { transactions, resetTransactions } = useTransactions()
   const [range, setRange] = useState<Range>('Harian')
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
 
   const filtered = useMemo(
     () => transactions.filter((t) => withinRange(t.createdAt, range)),
@@ -59,6 +61,14 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPasswordDialogOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-secondary"
+            >
+              <KeyRound className="size-4" />
+              <span className="hidden sm:inline">Ganti Password</span>
+            </button>
             <button
               type="button"
               onClick={onLogout}
@@ -141,6 +151,10 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       <AddTransactionDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
+      />
+      <ChangePasswordDialog
+        open={passwordDialogOpen}
+        onClose={() => setPasswordDialogOpen(false)}
       />
     </main>
   )

@@ -1,5 +1,9 @@
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { promisify } from 'node:util'
+import { createHmac, randomBytes, scrypt, timingSafeEqual } from 'node:crypto'
 import { cookies } from 'next/headers'
+import { eq } from 'drizzle-orm'
+import { getDb } from '@/lib/db'
+import { adminCredentials } from '@/lib/db/schema'
 
 const SESSION_COOKIE = 'bogelwash-admin-session'
 const SESSION_TTL_SECONDS = 60 * 60 * 12
@@ -43,3 +47,33 @@ export async function requireAdmin() {
 
 export const adminSessionCookie = SESSION_COOKIE
 export const adminSessionMaxAge = SESSION_TTL_SECONDS
+
+const scryptAsync = promisify(scrypt)
+
+export async function getAdminPasswordHash() {
+  try {
+    const [credential] = await getDb()
+      .select({ passwordHash: adminCredentials.passwordHash })
+      .from(adminCredentials)
+      .where(eq(adminCredentials.id, 1))
+      .limit(1)
+    return credential?.passwordHash ?? null
+  } catch {
+    return null
+  }
+}
+
+export async function hashAdminPassword(password: string) {
+  const salt = randomBytes(16).toString('hex')
+  const derivedKey = (await scryptAsync(password, salt, 64)) as Buffer
+  return `scrypt:${salt}:${derivedKey.toString('hex')}`
+}
+
+export async function verifyAdminPassword(password: string, storedHash: string) {
+  const [, salt, key] = storedHash.split(':')
+  if (!salt || !key) return false
+
+  const derivedKey = (await scryptAsync(password, salt, 64)) as Buffer
+  const expectedKey = Buffer.from(key, 'hex')
+  return derivedKey.length === expectedKey.length && timingSafeEqual(derivedKey, expectedKey)
+}

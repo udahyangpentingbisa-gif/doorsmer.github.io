@@ -19,6 +19,7 @@ pnpm db migrate
 pnpm db seed
 ```
 
-6. Test the deployed home page, booking form, and `/admin` route.
+6. Log in to `/admin`, open **Ganti Password**, and set a new password. The password is stored as a hash in Neon and overrides `ADMIN_PASSWORD`.
+7. Test the deployed home page, booking form, and `/admin` route.
 
 GitHub Pages is not used for this app because its server API routes cannot run there. GitHub Actions remains a build check only; Vercel performs the deployment and hosts the Neon-backed API routes.

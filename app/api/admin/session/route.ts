@@ -3,7 +3,9 @@ import {
   adminSessionCookie,
   adminSessionMaxAge,
   createAdminSession,
+  getAdminPasswordHash,
   isAdminAuthenticated,
+  verifyAdminPassword,
 } from '@/lib/server/auth'
 
 export async function POST(request: Request) {
@@ -11,12 +13,12 @@ export async function POST(request: Request) {
   const username = typeof body?.username === 'string' ? body.username : ''
   const password = typeof body?.password === 'string' ? body.password : ''
 
-  if (
-    !process.env.ADMIN_USERNAME ||
-    !process.env.ADMIN_PASSWORD ||
-    username !== process.env.ADMIN_USERNAME ||
-    password !== process.env.ADMIN_PASSWORD
-  ) {
+  const storedHash = await getAdminPasswordHash()
+  const passwordValid = storedHash
+    ? await verifyAdminPassword(password, storedHash)
+    : password === process.env.ADMIN_PASSWORD
+
+  if (!process.env.ADMIN_USERNAME || username !== process.env.ADMIN_USERNAME || !passwordValid) {
     return NextResponse.json({ error: 'Username atau password tidak sesuai.' }, { status: 401 })
   }
 

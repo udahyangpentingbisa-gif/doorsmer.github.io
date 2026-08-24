@@ -33,6 +33,14 @@ export const servicePackages = pgTable('service_packages', {
   check('service_packages_vehicle_check', sql`${table.vehicle} in ('Motor', 'Mobil')`),
 ])
 
+export const adminCredentials = pgTable('admin_credentials', {
+  id: integer('id').primaryKey(),
+  passwordHash: text('password_hash').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+})
+
 export const transactions = pgTable('transactions', {
   id: text('id').primaryKey(),
   customer: text('customer').notNull(),
