@@ -28,6 +28,8 @@ export function AddTransactionDialog({
   const [vehicle, setVehicle] = useState<VehicleType>('Motor')
   const [packageId, setPackageId] = useState('motor-kecil')
   const [payment, setPayment] = useState<PaymentMethod>('Tunai')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   if (!open) return null
 
@@ -41,15 +43,25 @@ export function AddTransactionDialog({
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const data = new FormData(e.currentTarget)
-    await addTransaction({
-      customer: String(data.get('customer') || 'Walk-in'),
-      phone: '',
-      vehicle,
-      plate: String(data.get('plate') || ''),
-      packageId,
-      payment,
-    })
-    onClose()
+    setSubmitting(true)
+    setError(null)
+
+    try {
+      await addTransaction({
+        customer: String(data.get('customer') || 'Walk-in'),
+        phone: String(data.get('phone') || 'Walk-in'),
+        vehicle,
+        plate: String(data.get('plate') || ''),
+        packageId,
+        payment,
+      })
+      e.currentTarget.reset()
+      onClose()
+    } catch {
+      setError('Transaksi gagal disimpan. Periksa koneksi lalu coba lagi.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -92,6 +104,19 @@ export function AddTransactionDialog({
               name="customer"
               required
               placeholder="cth. Walk-in / Nama"
+              className={inputCls}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="m-phone" className={labelCls}>
+              No. HP / WhatsApp <span className="text-muted-foreground">(opsional)</span>
+            </label>
+            <input
+              id="m-phone"
+              name="phone"
+              inputMode="tel"
+              placeholder="Kosongkan untuk pelanggan walk-in"
               className={inputCls}
             />
           </div>
@@ -187,19 +212,27 @@ export function AddTransactionDialog({
             )}
           </div>
 
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
+
           <div className="mt-2 flex gap-3">
             <button
               type="button"
               onClick={onClose}
+              disabled={submitting}
               className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary"
             >
               Batal
             </button>
             <button
               type="submit"
+              disabled={submitting}
               className="flex-1 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
             >
-              Simpan Transaksi
+              {submitting ? 'Menyimpan...' : 'Simpan Transaksi'}
             </button>
           </div>
         </form>
