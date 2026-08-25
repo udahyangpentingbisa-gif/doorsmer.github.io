@@ -3,18 +3,31 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { Droplets, LockKeyhole } from 'lucide-react'
 import { AdminDashboard } from './admin-dashboard'
+import type { AdminRole } from '@/lib/server/auth'
 
 export function AdminGate() {
   const [authenticated, setAuthenticated] = useState(false)
+  const [role, setRole] = useState<AdminRole | null>(null)
   const [ready, setReady] = useState(false)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [sessionError, setSessionError] = useState('')
 
   useEffect(() => {
     fetch('/api/admin/session')
-      .then((response) => response.json())
-      .then((body: { authenticated: boolean }) => setAuthenticated(body.authenticated))
+      .then(async (response) => {
+        const body = (await response.json().catch(() => null)) as
+          | { authenticated?: boolean; role?: AdminRole | null; error?: string }
+          | null
+        if (!response.ok) throw new Error(body?.error)
+        return { authenticated: body?.authenticated === true, role: body?.role ?? null }
+      })
+      .then((body) => {
+        setAuthenticated(body.authenticated)
+        setRole(body.role)
+      })
+      .catch(() => setSessionError('Admin belum siap. Periksa environment variables di Vercel.'))
       .finally(() => setReady(true))
   }, [])
 
@@ -29,6 +42,8 @@ export function AdminGate() {
 
     if (response.ok) {
       setAuthenticated(true)
+      const body = (await response.json()) as { role?: AdminRole }
+      setRole(body.role ?? null)
       setError('')
       window.location.reload()
       return
@@ -46,7 +61,17 @@ export function AdminGate() {
   }
 
   if (!ready) return null
-  if (authenticated) return <AdminDashboard onLogout={handleLogout} />
+  if (sessionError) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center px-4 py-10">
+        <section className="w-full max-w-md rounded-2xl border border-border bg-card p-6 text-center shadow-xl sm:p-8">
+          <h1 className="text-xl font-bold">Admin tidak dapat dibuka</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{sessionError}</p>
+        </section>
+      </main>
+    )
+  }
+  if (authenticated) return <AdminDashboard onLogout={handleLogout} role={role} />
 
   return (
     <main className="flex min-h-dvh items-center justify-center px-4 py-10">

@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { transactions } from '@/lib/db/schema'
-import { requireAdmin } from '@/lib/server/auth'
+import { requireAdminRole } from '@/lib/server/auth'
 
 export async function POST() {
   try {
-    await requireAdmin()
+    await requireAdminRole('admin')
   } catch (response) {
     return response instanceof Response ? response : NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

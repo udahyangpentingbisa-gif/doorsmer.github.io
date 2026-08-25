@@ -4,7 +4,7 @@ import {
   adminSessionMaxAge,
   createAdminSession,
   getAdminPasswordHash,
-  isAdminAuthenticated,
+  getAdminRole,
   verifyAdminPassword,
 } from '@/lib/server/auth'
 
@@ -14,16 +14,23 @@ export async function POST(request: Request) {
   const password = typeof body?.password === 'string' ? body.password : ''
 
   const storedHash = await getAdminPasswordHash()
-  const passwordValid = storedHash
+  let role: 'admin' | 'staff' | null = null
+  const adminPasswordValid = storedHash
     ? await verifyAdminPassword(password, storedHash)
     : password === process.env.ADMIN_PASSWORD
 
-  if (!process.env.ADMIN_USERNAME || username !== process.env.ADMIN_USERNAME || !passwordValid) {
+  if (username === process.env.ADMIN_USERNAME && adminPasswordValid) {
+    role = 'admin'
+  } else if (username === process.env.STAFF_USERNAME && password === process.env.STAFF_PASSWORD) {
+    role = 'staff'
+  }
+
+  if (!role) {
     return NextResponse.json({ error: 'Username atau password tidak sesuai.' }, { status: 401 })
   }
 
-  const session = createAdminSession()
-  const response = NextResponse.json({ authenticated: true })
+  const session = createAdminSession(role)
+  const response = NextResponse.json({ authenticated: true, role })
   response.cookies.set(adminSessionCookie, session.value, {
     httpOnly: true,
     sameSite: 'lax',
@@ -35,7 +42,8 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  return NextResponse.json({ authenticated: await isAdminAuthenticated() })
+  const role = await getAdminRole()
+  return NextResponse.json({ authenticated: role !== null, role })
 }
 
 export async function DELETE() {

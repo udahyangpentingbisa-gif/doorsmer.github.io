@@ -8,6 +8,7 @@ import { StatCards } from '@/components/admin/stat-cards'
 import { TransactionTable } from '@/components/admin/transaction-table'
 import { AddTransactionDialog } from '@/components/admin/add-transaction-dialog'
 import { ChangePasswordDialog } from '@/components/admin/change-password-dialog'
+import type { AdminRole } from '@/lib/server/auth'
 
 type Range = 'Harian' | 'Mingguan' | 'Bulanan'
 
@@ -26,7 +27,7 @@ function withinRange(createdAt: string, range: Range) {
   return diffDays <= 31
 }
 
-export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
+export function AdminDashboard({ onLogout, role }: { onLogout: () => void; role: AdminRole | null }) {
   const { transactions, resetTransactions } = useTransactions()
   const [range, setRange] = useState<Range>('Harian')
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -61,14 +62,16 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setPasswordDialogOpen(true)}
-              className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-secondary"
-            >
-              <KeyRound className="size-4" />
-              <span className="hidden sm:inline">Ganti Password</span>
-            </button>
+            {role === 'admin' && (
+              <button
+                type="button"
+                onClick={() => setPasswordDialogOpen(true)}
+                className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-secondary"
+              >
+                <KeyRound className="size-4" />
+                <span className="hidden sm:inline">Ganti Password</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={onLogout}
@@ -122,14 +125,16 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <Plus className="size-4" />
               <span className="hidden sm:inline">Tambah Transaksi</span>
             </button>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="inline-flex items-center gap-2 rounded-xl border border-destructive/40 px-4 py-2.5 text-sm font-semibold text-destructive transition hover:bg-destructive/10"
-            >
-              <RotateCcw className="size-4" />
-              <span className="hidden sm:inline">Reset Dashboard</span>
-            </button>
+            {role === 'admin' && (
+              <button
+                type="button"
+                onClick={handleReset}
+                className="inline-flex items-center gap-2 rounded-xl border border-destructive/40 px-4 py-2.5 text-sm font-semibold text-destructive transition hover:bg-destructive/10"
+              >
+                <RotateCcw className="size-4" />
+                <span className="hidden sm:inline">Reset Dashboard</span>
+              </button>
+            )}
           </div>
         </div>
 

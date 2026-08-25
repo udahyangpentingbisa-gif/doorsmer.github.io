@@ -8,6 +8,8 @@ import { adminCredentials } from '@/lib/db/schema'
 const SESSION_COOKIE = 'bogelwash-admin-session'
 const SESSION_TTL_SECONDS = 60 * 60 * 12
 
+export type AdminRole = 'admin' | 'staff'
+
 function secret() {
   const value = process.env.ADMIN_SESSION_SECRET
   if (!value) throw new Error('ADMIN_SESSION_SECRET is not configured')
@@ -18,29 +20,42 @@ function sign(value: string) {
   return createHmac('sha256', secret()).update(value).digest('hex')
 }
 
-export function createAdminSession() {
+export function createAdminSession(role: AdminRole) {
   const expires = Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS
-  const value = `${expires}.${sign(String(expires))}`
+  const payload = `${role}.${expires}`
+  const value = `${payload}.${sign(payload)}`
   return { value, expires }
 }
 
-export async function isAdminAuthenticated() {
+export async function getAdminRole(): Promise<AdminRole | null> {
   const value = (await cookies()).get(SESSION_COOKIE)?.value
-  if (!value) return false
+  if (!value) return null
 
-  const [expiresText, signature] = value.split('.')
+  const [role, expiresText, signature] = value.split('.')
+  if (role !== 'admin' && role !== 'staff') return null
   const expires = Number(expiresText)
   if (!Number.isSafeInteger(expires) || expires < Math.floor(Date.now() / 1000)) {
-    return false
+    return null
   }
 
-  const expected = sign(expiresText)
-  if (signature.length !== expected.length) return false
-  return timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
+  const payload = `${role}.${expiresText}`
+  const expected = sign(payload)
+  if (!signature || signature.length !== expected.length) return null
+  return timingSafeEqual(Buffer.from(signature), Buffer.from(expected)) ? role : null
+}
+
+export async function isAdminAuthenticated() {
+  return (await getAdminRole()) !== null
 }
 
 export async function requireAdmin() {
   if (!(await isAdminAuthenticated())) {
+    throw new Response('Unauthorized', { status: 401 })
+  }
+}
+
+export async function requireAdminRole(role: AdminRole) {
+  if ((await getAdminRole()) !== role) {
     throw new Response('Unauthorized', { status: 401 })
   }
 }

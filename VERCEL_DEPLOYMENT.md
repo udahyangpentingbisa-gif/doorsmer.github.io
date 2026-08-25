@@ -8,6 +8,8 @@
 DATABASE_URL=postgresql://<user>:<password>@<neon-host>/<database>?sslmode=require
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=<strong-admin-password>
+STAFF_USERNAME=staff
+STAFF_PASSWORD=<strong-staff-password>
 ADMIN_SESSION_SECRET=<long-random-secret>
 ```
 
