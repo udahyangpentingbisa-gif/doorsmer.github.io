@@ -43,7 +43,7 @@ export function BookingForm() {
 
   function onVehicleChange(v: VehicleType) {
     setVehicle(v)
-    setPackageId(v === 'Motor' ? 'motor-kecil' : 'mobil-standar')
+    setPackageId(v === 'Motor' ? 'motor-kecil' : 'mobil-kecil')
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {

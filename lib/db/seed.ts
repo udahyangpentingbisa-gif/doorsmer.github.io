@@ -34,5 +34,20 @@ export async function seedPackages() {
     `
   }
 
+  await sql`
+    UPDATE transactions
+    SET
+      package_id = 'mobil-kecil',
+      package_name = 'Cuci Mobil Kecil',
+      price = 40000,
+      updated_at = now()
+    WHERE package_id = 'mobil-standar'
+  `
+
+  await sql`
+    DELETE FROM service_packages
+    WHERE id = 'mobil-standar'
+  `
+
   console.log(`Seeded ${ALL_PACKAGES.length} service packages`)
 }
