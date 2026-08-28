@@ -3,9 +3,9 @@ import {
   adminSessionCookie,
   adminSessionMaxAge,
   createAdminSession,
-  getAdminPasswordHash,
   getAdminRole,
-  verifyAdminPassword,
+  findUserByUsername,
+  verifyPassword,
 } from '@/lib/server/auth'
 
 export async function POST(request: Request) {
@@ -13,23 +13,13 @@ export async function POST(request: Request) {
   const username = typeof body?.username === 'string' ? body.username : ''
   const password = typeof body?.password === 'string' ? body.password : ''
 
-  const storedHash = await getAdminPasswordHash()
-  let role: 'admin' | 'staff' | null = null
-  const adminPasswordValid = storedHash
-    ? await verifyAdminPassword(password, storedHash)
-    : password === process.env.ADMIN_PASSWORD
-
-  if (username === process.env.ADMIN_USERNAME && adminPasswordValid) {
-    role = 'admin'
-  } else if (username === process.env.STAFF_USERNAME && password === process.env.STAFF_PASSWORD) {
-    role = 'staff'
-  }
-
-  if (!role) {
+  const user = await findUserByUsername(username)
+  if (!user || !user.active || !(await verifyPassword(password, user.passwordHash))) {
     return NextResponse.json({ error: 'Username atau password tidak sesuai.' }, { status: 401 })
   }
 
-  const session = createAdminSession(role)
+  const role = user.role as 'admin' | 'staff'
+  const session = createAdminSession({ userId: user.id, username: user.username, role })
   const response = NextResponse.json({ authenticated: true, role })
   response.cookies.set(adminSessionCookie, session.value, {
     httpOnly: true,

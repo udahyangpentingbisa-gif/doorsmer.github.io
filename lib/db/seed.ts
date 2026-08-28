@@ -1,6 +1,8 @@
-import 'dotenv/config'
+import { config } from 'dotenv'
 import { neon } from '@neondatabase/serverless'
 import { ALL_PACKAGES } from '@/lib/data'
+
+config({ path: '.env.local' })
 
 const databaseUrl = process.env.DATABASE_URL
 if (!databaseUrl) throw new Error('DATABASE_URL is required to seed the database')

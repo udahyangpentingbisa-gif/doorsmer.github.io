@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
+import { eq } from 'drizzle-orm'
 import { getDb } from '@/lib/db'
-import { adminCredentials } from '@/lib/db/schema'
+import { users } from '@/lib/db/schema'
 import {
-  getAdminPasswordHash,
-  hashAdminPassword,
+  getAdminSession,
+  hashPassword,
   requireAdmin,
-  verifyAdminPassword,
+  verifyPassword,
 } from '@/lib/server/auth'
 
 export async function PUT(request: Request) {
@@ -21,10 +22,11 @@ export async function PUT(request: Request) {
   const currentPassword = typeof body?.currentPassword === 'string' ? body.currentPassword : ''
   const newPassword = typeof body?.newPassword === 'string' ? body.newPassword : ''
   const confirmPassword = typeof body?.confirmPassword === 'string' ? body.confirmPassword : ''
-  const storedHash = await getAdminPasswordHash()
-  const currentPasswordValid = storedHash
-    ? await verifyAdminPassword(currentPassword, storedHash)
-    : currentPassword === process.env.ADMIN_PASSWORD
+  const session = await getAdminSession()
+  const [user] = session
+    ? await getDb().select().from(users).where(eq(users.id, session.userId)).limit(1)
+    : []
+  const currentPasswordValid = user ? await verifyPassword(currentPassword, user.passwordHash) : false
 
   if (!currentPasswordValid) {
     return NextResponse.json({ error: 'Password lama tidak sesuai.' }, { status: 400 })
@@ -37,14 +39,11 @@ export async function PUT(request: Request) {
   }
 
   try {
-    const passwordHash = await hashAdminPassword(newPassword)
+    const passwordHash = await hashPassword(newPassword)
     await getDb()
-      .insert(adminCredentials)
-      .values({ id: 1, passwordHash })
-      .onConflictDoUpdate({
-        target: adminCredentials.id,
-        set: { passwordHash, updatedAt: new Date() },
-      })
+      .update(users)
+      .set({ passwordHash, updatedAt: new Date() })
+      .where(eq(users.id, session!.userId))
 
     return NextResponse.json({ updated: true })
   } catch (error) {

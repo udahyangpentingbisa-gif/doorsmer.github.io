@@ -8,6 +8,7 @@ import { StatCards } from '@/components/admin/stat-cards'
 import { TransactionTable } from '@/components/admin/transaction-table'
 import { AddTransactionDialog } from '@/components/admin/add-transaction-dialog'
 import { ChangePasswordDialog } from '@/components/admin/change-password-dialog'
+import { StaffManagement } from '@/components/admin/staff-management'
 import type { AdminRole } from '@/lib/server/auth'
 
 type Range = 'Harian' | 'Mingguan' | 'Bulanan'
@@ -151,6 +152,8 @@ export function AdminDashboard({ onLogout, role }: { onLogout: () => void; role:
           </div>
           <TransactionTable transactions={filtered} />
         </div>
+
+        {role === 'admin' && <StaffManagement />}
       </div>
 
       <AddTransactionDialog

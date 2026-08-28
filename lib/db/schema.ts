@@ -8,6 +8,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uuid,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 
@@ -33,13 +34,21 @@ export const servicePackages = pgTable('service_packages', {
   check('service_packages_vehicle_check', sql`${table.vehicle} in ('Motor', 'Mobil')`),
 ])
 
-export const adminCredentials = pgTable('admin_credentials', {
-  id: integer('id').primaryKey(),
+export const users = pgTable('users', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  username: text('username').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
+  role: text('role').notNull().default('staff'),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .defaultNow()
     .notNull(),
-})
+}, (table) => [
+  check('users_role_check', sql`${table.role} in ('admin', 'staff')`),
+])
 
 export const transactions = pgTable('transactions', {
   id: text('id').primaryKey(),

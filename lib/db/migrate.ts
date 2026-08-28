@@ -1,8 +1,10 @@
-import 'dotenv/config'
+import { config } from 'dotenv'
 import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
 import { migrate } from 'drizzle-orm/neon-http/migrator'
 import * as schema from './schema'
+
+config({ path: '.env.local' })
 
 export async function migrateDatabase() {
   const databaseUrl = process.env.DATABASE_URL
